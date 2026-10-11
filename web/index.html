@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#10172a">
+<title>QR & Barras | Generador</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:20px;font-family:system-ui,Arial,sans-serif;background:#0b1020;color:#f5f7ff;min-height:100vh}
+main{max-width:850px;margin:auto}
+header{text-align:center;padding:20px 0}
+h1{font-size:35px;margin:8px}
+header p,.muted{color:#aab6cf}
+.panel{background:#151e33;border:1px solid #2b3855;border-radius:20px;padding:20px;margin-bottom:16px}
+.tabs{display:flex;gap:8px;margin-bottom:18px}
+button,select,input,textarea{font:inherit}
+button{cursor:pointer;border:0;border-radius:11px;padding:12px;background:#293754;color:white;font-weight:bold}
+.tabs button{flex:1}
+.tabs .active,.generate{background:linear-gradient(100deg,#83a5ff,#a797ff);color:#10172a}
+label{display:block;font-weight:bold;margin:14px 0 7px}
+textarea,input,select{width:100%;padding:12px;border:1px solid #3b4968;border-radius:10px;background:#0b1223;color:white}
+textarea{min-height:100px;resize:vertical}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.generate{width:100%;margin-top:18px}
+.preview{text-align:center}
+#output{background:white;color:#111;border-radius:14px;padding:16px;min-height:180px;display:flex;align-items:center;justify-content:center;overflow:auto}
+#output canvas,#output img,#output svg{max-width:100%;height:auto}
+.actions{display:flex;gap:8px;margin-top:12px}
+.actions button{flex:1}
+#status{font-size:13px;color:#aab6cf;margin-top:12px;min-height:20px}
+.hidden{display:none!important}
+footer{text-align:center;font-size:12px;color:#aab6cf;padding:12px}
+@media(max-width:520px){body{padding:12px}.grid{grid-template-columns:1fr}.panel{padding:15px}h1{font-size:30px}}
+</style>
+</head>
+<body>
+<main>
+<header>
+<div style="font-size:42px">▦</div>
+<h1>QR & Barras</h1>
+<p>Genera códigos QR y de barras gratis.</p>
+</header>
+<section class="panel">
+<div class="tabs">
+<button id="qrTab" class="active" onclick="setMode('qr')">▦ Código QR</button>
+<button id="barTab" onclick="setMode('bar')">▥ Código de barras</button>
+</div>
+<label for="content">Texto, enlace o números</label>
+<textarea id="content" placeholder="Escribe aquí tu contenido...">https://example.com</textarea>
+<div id="qrOptions">
+<div class="grid">
+<div><label for="size">Tamaño QR</label><select id="size"><option value="180">Pequeño</option><option value="260" selected>Mediano</option><option value="340">Grande</option></select></div>
+<div><label for="level">Corrección</label><select id="level"><option value="L">Baja</option><option value="M" selected>Media</option><option value="Q">Alta</option><option value="H">Muy alta</option></select></div>
+</div>
+</div>
+<div id="barOptions" class="hidden">
+<label for="format">Formato</label>
+<select id="format">
+<option value="CODE128">CODE 128</option>
+<option value="CODE39">CODE 39</option>
+<option value="EAN13">EAN-13</option>
+<option value="UPC">UPC</option>
+<option value="ITF">ITF</option>
+</select>
+<div class="grid">
+<div><label for="width">Grosor de líneas</label><select id="width"><option value="1">Fino</option><option value="2" selected>Normal</option><option value="3">Grueso</option></select></div>
+<div><label for="height">Altura</label><select id="height"><option value="50">Baja</option><option value="80" selected>Normal</option><option value="120">Alta</option></select></div>
+</div>
+</div>
+<button class="generate" onclick="generate()">Generar código</button>
+<div id="status" role="status"></div>
+</section>
+<section class="panel preview">
+<h2>Vista previa</h2>
+<div id="output"><span style="color:#68738a">Tu código aparecerá aquí.</span></div>
+<div class="actions">
+<button onclick="downloadCode()">Descargar PNG</button>
+<button onclick="clearCode()">Limpiar</button>
+</div>
+</section>
+<footer>La información se procesa en tu navegador.</footer>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script>
+let mode='qr',ready=false;
+function setMode(m){
+ mode=m;ready=false;
+ document.getElementById('qrTab').classList.toggle('active',m==='qr');
+ document.getElementById('barTab').classList.toggle('active',m==='bar');
+ document.getElementById('qrOptions').classList.toggle('hidden',m!=='qr');
+ document.getElementById('barOptions').classList.toggle('hidden',m!=='bar');
+ document.getElementById('output').innerHTML='<span style="color:#68738a">Tu código aparecerá aquí.</span>';
+ document.getElementById('status').textContent='';
+}
+function generate(){
+ const v=document.getElementById('content').value.trim();
+ const out=document.getElementById('output'),status=document.getElementById('status');
+ ready=false;status.textContent='';
+ if(!v){status.textContent='Escribe primero algún contenido.';return}
+ out.innerHTML='';
+ try{
+  if(mode==='qr'){
+   if(!window.QRCode)throw Error('No se cargó la biblioteca QR. Comprueba Internet.');
+   const holder=document.createElement('div');out.appendChild(holder);
+   new QRCode(holder,{text:v,width:+document.getElementById('size').value,height:+document.getElementById('size').value,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel[document.getElementById('level').value]});
+  }else{
+   if(!window.JsBarcode)throw Error('No se cargó la biblioteca de barras. Comprueba Internet.');
+   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');out.appendChild(svg);
+   JsBarcode(svg,v,{format:document.getElementById('format').value,lineColor:'#000',background:'#fff',width:+document.getElementById('width').value,height:+document.getElementById('height').value,displayValue:true,margin:8});
+  }
+  ready=true;status.textContent='¡Código generado!';
+ }catch(e){out.innerHTML='<span style="color:#333">No se pudo generar el código.</span>';status.textContent=e.message||'Revisa el contenido y el formato.'}
+}
+function clearCode(){document.getElementById('content').value='';document.getElementById('output').innerHTML='<span style="color:#68738a">Tu código aparecerá aquí.</span>';document.getElementById('status').textContent='';ready=false}
+function downloadCode(){
+ if(!ready){document.getElementById('status').textContent='Primero genera un código.';return}
+ const out=document.getElementById('output'),c=out.querySelector('canvas'),svg=out.querySelector('svg');
+ if(c){const a=document.createElement('a');a.download='codigo-qr.png';a.href=c.toDataURL('image/png');a.click();return}
+ if(svg){
+  const copy=svg.cloneNode(true);copy.setAttribute('xmlns','http://www.w3.org/2000/svg');
+  const xml=new XMLSerializer().serializeToString(copy),url=URL.createObjectURL(new Blob([xml],{type:'image/svg+xml;charset=utf-8'})),img=new Image();
+  img.onload=()=>{const c=document.createElement('canvas');c.width=img.width*2;c.height=img.height*2;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);const a=document.createElement('a');a.download='codigo-barras.png';a.href=c.toDataURL('image/png');a.click()};
+  img.onerror=()=>{URL.revokeObjectURL(url);document.getElementById('status').textContent='No se pudo exportar la imagen.'};img.src=url;
+ }
+}
+</script>
+</body>
+</html>
